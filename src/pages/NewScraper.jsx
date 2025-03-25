@@ -1,40 +1,344 @@
-import { jsx as _jsx, jsxs as _jsxs } from "react/jsx-runtime";
-import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import React, { useState } from "react";
 const base_url = import.meta.env.VITE_API_URL;
-const NewScraper = () => {
-    const [url, setUrl] = useState("");
-    const [loading, setLoading] = useState(false);
-    const [error, setError] = useState("");
-    const navigate = useNavigate();
-    const handleSubmit = async (e) => {
-        e.preventDefault();
-        setLoading(true);
-        setError("");
-        try {
-            const response = await fetch(`${base_url}/scrape`, {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                },
-                body: JSON.stringify({ url }),
-            });
-            const data = await response.json();
-            if (!response.ok) {
-                throw new Error(data.error || "Failed to start scraping");
-            }
-            navigate("/events");
-        }
-        catch (err) {
-            setError(err instanceof Error ? err.message : "An unexpected error occurred");
-        }
-        finally {
-            setLoading(false);
-        }
+
+const NewScraper = ({ onCancel, onSuccess }) => {
+  const [formData, setFormData] = useState({
+    URL: "",
+    Event_ID: "",
+    Event_Name: "",
+    Event_DateTime: "",
+    Venue: "",
+    Zone: "General",
+    Available_Seats: 0,
+    Skip_Scraping: true,
+    inHandDate: "", // Add inHandDate field
+  });
+
+  console.log(formData)
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+  const [validationState, setValidationState] = useState({
+    URL: true,
+    Event_ID: true,
+    Event_Name: true,
+    Event_DateTime: true,
+    Venue: true,
+    Zone: true,
+    inHandDate: true, // Add validation for inHandDate
+  });
+
+  const validateUrl = (url) => {
+    try {
+      const parsed = new URL(url);
+      return (
+        parsed.hostname.includes("ticketmaster.com") &&
+        parsed.pathname.includes("/event/")
+      );
+    } catch {
+      return false;
+    }
+  };
+
+  const validateForm = () => {
+    const validation = {
+      URL: validateUrl(formData.URL),
+      Event_ID: formData.Event_ID.length > 0,
+      Event_Name: formData.Event_Name.length >= 3,
+      Event_DateTime: Boolean(formData.Event_DateTime),
+      Venue: formData.Venue.length > 0,
+      Zone: formData.Zone.length > 0,
+      inHandDate: Boolean(formData.inHandDate), // Validate inHandDate
     };
-    const handleUrlChange = (e) => {
-        setUrl(e.target.value);
-    };
-    return (_jsxs("div", { className: "max-w-2xl mx-auto space-y-6", children: [_jsx("h1", { className: "text-2xl font-bold", children: "Start New Scraper" }), _jsxs("div", { className: "bg-white rounded-lg shadow-lg p-6", children: [_jsxs("div", { className: "mb-6", children: [_jsx("h2", { className: "text-lg font-semibold text-gray-700", children: "Enter Event URL" }), _jsx("p", { className: "text-sm text-gray-500 mt-1", children: "Enter a Ticketmaster event URL to start scraping ticket information" })] }), _jsxs("form", { onSubmit: handleSubmit, className: "space-y-4", children: [_jsxs("div", { children: [_jsx("label", { htmlFor: "url", className: "block text-sm font-medium text-gray-700 mb-1", children: "Event URL" }), _jsx("input", { id: "url", type: "url", placeholder: "https://www.ticketmaster.com/event/...", value: url, onChange: handleUrlChange, required: true, className: "w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-colors" })] }), error && (_jsx("div", { className: "bg-red-50 border-l-4 border-red-500 p-4", children: _jsxs("div", { className: "flex", children: [_jsx("div", { className: "flex-shrink-0", children: _jsx("svg", { className: "h-5 w-5 text-red-400", viewBox: "0 0 20 20", fill: "currentColor", children: _jsx("path", { fillRule: "evenodd", d: "M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z", clipRule: "evenodd" }) }) }), _jsx("div", { className: "ml-3", children: _jsx("p", { className: "text-sm text-red-700", children: error }) })] }) })), _jsxs("div", { className: "flex items-center justify-end space-x-4", children: [_jsx("button", { type: "button", onClick: () => navigate("/events"), className: "px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500", children: "Cancel" }), _jsx("button", { type: "submit", disabled: loading, className: `px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 ${loading ? "opacity-50 cursor-not-allowed" : ""}`, children: loading ? (_jsxs("div", { className: "flex items-center", children: [_jsxs("svg", { className: "animate-spin -ml-1 mr-3 h-5 w-5 text-white", xmlns: "http://www.w3.org/2000/svg", fill: "none", viewBox: "0 0 24 24", children: [_jsx("circle", { className: "opacity-25", cx: "12", cy: "12", r: "10", stroke: "currentColor", strokeWidth: "4" }), _jsx("path", { className: "opacity-75", fill: "currentColor", d: "M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" })] }), "Starting Scraper..."] })) : ("Start Scraping") })] })] }), _jsxs("div", { className: "mt-8 border-t pt-6", children: [_jsx("h3", { className: "text-sm font-medium text-gray-700 mb-2", children: "Instructions" }), _jsxs("ul", { className: "list-disc pl-5 text-sm text-gray-600 space-y-1", children: [_jsx("li", { children: "Enter a valid Ticketmaster event URL" }), _jsx("li", { children: "The scraper will start collecting ticket information" }), _jsx("li", { children: "You can monitor the progress in the Events page" }), _jsx("li", { children: "Data will be updated automatically at regular intervals" })] })] })] })] }));
+
+    setValidationState(validation);
+    return Object.values(validation).every(Boolean);
+  };
+
+  const handleInputChange = (e) => {
+    const { name, value } = e.target;
+    setFormData((prev) => ({
+      ...prev,
+      [name]: value,
+    }));
+
+    setError("");
+    setValidationState((prev) => ({
+      ...prev,
+      [name]: true,
+    }));
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+
+    if (!validateForm()) {
+      setError("Please fill in all required fields correctly");
+      return;
+    }
+
+    setLoading(true);
+    setError("");
+
+    try {
+      const response = await fetch(`${base_url}/api/events`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          URL: formData.URL,
+          Event_ID: formData.Event_ID,
+          Event_Name: formData.Event_Name,
+          Event_DateTime: formData.Event_DateTime,
+          Venue: formData.Venue,
+          Zone: formData.Zone,
+          Available_Seats: formData.Available_Seats,
+          Skip_Scraping: formData.Skip_Scraping,
+          inHandDate: formData.inHandDate, // Include inHandDate in the request
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || "Failed to create event");
+      }
+
+      const data = await response.json();
+      onSuccess?.(data); // Pass the created event data to the onSuccess callback
+    } catch (err) {
+      setError(err.message || "An unexpected error occurred");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-4">
+          <button
+            onClick={onCancel}
+            className="flex items-center gap-2 text-gray-600 hover:text-gray-900"
+          >
+            <span>←</span>
+            Back
+          </button>
+          <h1 className="text-2xl font-bold">Add New Event</h1>
+        </div>
+      </div>
+
+      <div className="bg-white rounded-lg shadow-lg p-6">
+        {error && (
+          <div className="mb-6 bg-red-50 border-l-4 border-red-500 p-4">
+            <p className="text-sm text-red-700">{error}</p>
+          </div>
+        )}
+
+        <form onSubmit={handleSubmit} className="space-y-6">
+          <div>
+            <label
+              htmlFor="URL"
+              className="block text-sm font-medium text-gray-700 mb-1"
+            >
+              Event URL
+            </label>
+            <input
+              id="URL"
+              name="URL"
+              type="url"
+              value={formData.URL}
+              onChange={handleInputChange}
+              placeholder="https://www.ticketmaster.com/event/..."
+              className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-colors ${
+                !validationState.URL ? "border-red-500" : "border-gray-300"
+              }`}
+            />
+            {!validationState.URL && (
+              <p className="mt-1 text-sm text-red-600">
+                Please enter a valid Ticketmaster event URL
+              </p>
+            )}
+          </div>
+
+          <div>
+            <label
+              htmlFor="Event_ID"
+              className="block text-sm font-medium text-gray-700 mb-1"
+            >
+              Event ID
+            </label>
+            <input
+              id="Event_ID"
+              name="Event_ID"
+              type="text"
+              value={formData.Event_ID}
+              onChange={handleInputChange}
+              placeholder="Enter event ID"
+              className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-colors ${
+                !validationState.Event_ID ? "border-red-500" : "border-gray-300"
+              }`}
+            />
+            {!validationState.Event_ID && (
+              <p className="mt-1 text-sm text-red-600">
+                Please enter a valid event ID
+              </p>
+            )}
+          </div>
+
+          <div>
+            <label
+              htmlFor="Event_Name"
+              className="block text-sm font-medium text-gray-700 mb-1"
+            >
+              Event Name
+            </label>
+            <input
+              id="Event_Name"
+              name="Event_Name"
+              type="text"
+              value={formData.Event_Name}
+              onChange={handleInputChange}
+              placeholder="Event Name"
+              className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-colors ${
+                !validationState.Event_Name
+                  ? "border-red-500"
+                  : "border-gray-300"
+              }`}
+            />
+            {!validationState.Event_Name && (
+              <p className="mt-1 text-sm text-red-600">
+                Name must be at least 3 characters long
+              </p>
+            )}
+          </div>
+
+          <div>
+            <label
+              htmlFor="Venue"
+              className="block text-sm font-medium text-gray-700 mb-1"
+            >
+              Venue
+            </label>
+            <input
+              id="Venue"
+              name="Venue"
+              type="text"
+              value={formData.Venue}
+              onChange={handleInputChange}
+              placeholder="Enter venue name"
+              className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-colors ${
+                !validationState.Venue ? "border-red-500" : "border-gray-300"
+              }`}
+            />
+            {!validationState.Venue && (
+              <p className="mt-1 text-sm text-red-600">
+                Please enter the venue name
+              </p>
+            )}
+          </div>
+
+          <div>
+            <label
+              htmlFor="Zone"
+              className="block text-sm font-medium text-gray-700 mb-1"
+            >
+              Zone
+            </label>
+            <input
+              id="Zone"
+              name="Zone"
+              type="text"
+              value={formData.Zone}
+              onChange={handleInputChange}
+              placeholder="Enter zone"
+              className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-colors ${
+                !validationState.Zone ? "border-red-500" : "border-gray-300"
+              }`}
+            />
+            {!validationState.Zone && (
+              <p className="mt-1 text-sm text-red-600">Please enter the zone</p>
+            )}
+          </div>
+
+          <div>
+            <label
+              htmlFor="Event_DateTime"
+              className="block text-sm font-medium text-gray-700 mb-1"
+            >
+              Event Date & Time
+            </label>
+            <input
+              id="Event_DateTime"
+              name="Event_DateTime"
+              type="datetime-local"
+              value={formData.Event_DateTime}
+              onChange={handleInputChange}
+              className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-colors ${
+                !validationState.Event_DateTime
+                  ? "border-red-500"
+                  : "border-gray-300"
+              }`}
+            />
+            {!validationState.Event_DateTime && (
+              <p className="mt-1 text-sm text-red-600">
+                Please select the event date and time
+              </p>
+            )}
+          </div>
+          <div>
+            <label
+              htmlFor="inHandDate"
+              className="block text-sm font-medium text-gray-700 mb-1"
+            >
+              In-Hand Date
+            </label>
+            <input
+              id="inHandDate"
+              name="inHandDate"
+              type="datetime-local"
+              value={formData.inHandDate}
+              onChange={handleInputChange}
+              className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-colors ${
+                !validationState.inHandDate
+                  ? "border-red-500"
+                  : "border-gray-300"
+              }`}
+            />
+            {!validationState.inHandDate && (
+              <p className="mt-1 text-sm text-red-600">
+                Please select the in-hand date
+              </p>
+            )}
+          </div>
+          <div className="flex items-center justify-end space-x-4 pt-4">
+            <button
+              type="button"
+              onClick={onCancel}
+              className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              disabled={loading}
+              className={`flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 ${
+                loading ? "opacity-50 cursor-not-allowed" : ""
+              }`}
+            >
+              {loading ? (
+                <>
+                  <span className="animate-spin">↻</span>
+                  Setting Up...
+                </>
+              ) : (
+                "Start Tracking"
+              )}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
 };
+
 export default NewScraper;
