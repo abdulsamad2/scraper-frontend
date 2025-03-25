@@ -80,7 +80,7 @@ const NewScraper = ({ onCancel, onSuccess }) => {
     setError("");
 
     try {
-      const response = await fetch(`${base_url}/api/events`, {
+      const response = await fetch(`/api/events`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

@@ -18,7 +18,7 @@ const Dashboard = () => {
   useEffect(() => {
     const fetchStats = async () => {
       try {
-        const response = await fetch(`${base_url}/api/stats`);
+        const response = await fetch(`/api/stats`);
         if (!response.ok) {
           throw new Error(`HTTP error! status: ${response.status}`);
         }
