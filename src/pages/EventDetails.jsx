@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
+import { get, del } from "../services/api";
 
 const EventDetails = () => {
   const { id } = useParams();
@@ -10,18 +11,17 @@ const EventDetails = () => {
   const [error, setError] = useState(null);
   const [statusMessage, setStatusMessage] = useState(null);
   const [expandedRow, setExpandedRow] = useState(null); // Track expanded row
-  const base_url = import.meta.env.VITE_API_URL;
 
   const fetchEventDetails = async () => {
     try {
       setLoading(true);
-      const response = await fetch(`${base_url}/api/events/${id}`);
+      const response = await get(`/api/events/${id}`);
       if (!response.ok) throw new Error("Failed to fetch event details");
       const data = await response.json();
       setEvent(data.data);
 
       // Fetch error logs
-      const errorResponse = await fetch(`${base_url}/api/events/${id}/errors`);
+      const errorResponse = await get(`/api/events/${id}/errors`);
       if (errorResponse.ok) {
         const errorData = await errorResponse.json();
         setErrorLogs(errorData.data);
@@ -37,9 +37,7 @@ const EventDetails = () => {
     if (!window.confirm("Are you sure you want to delete this event?")) return;
 
     try {
-      const response = await fetch(`${base_url}/api/events/${id}`, {
-        method: "DELETE",
-      });
+      const response = await del(`/api/events/${id}`);
 
       if (!response.ok) throw new Error("Failed to delete event");
 
