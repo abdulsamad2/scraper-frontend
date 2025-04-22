@@ -12,12 +12,40 @@ const EventDetails = () => {
   const [statusMessage, setStatusMessage] = useState(null);
   const [expandedRow, setExpandedRow] = useState(null); // Track expanded row
 
+  // Helper function to safely extract stats data
+  const getStatValue = (key, defaultValue = 0) => {
+    if (!event) return defaultValue;
+    
+    // Check direct properties first
+    if (event[key] !== undefined) return event[key];
+    
+    // Check metadata properties
+    if (event.metadata && event.metadata[key] !== undefined) return event.metadata[key];
+    
+    // Check for nested properties in ticketStats
+    if (key.includes('.')) {
+      const [parent, child] = key.split('.');
+      
+      // Check in root level
+      if (event[parent] && event[parent][child] !== undefined) return event[parent][child];
+      
+      // Check in metadata
+      if (event.metadata && event.metadata[parent] && event.metadata[parent][child] !== undefined) {
+        return event.metadata[parent][child];
+      }
+    }
+    
+    return defaultValue;
+  };
+
   const fetchEventDetails = async () => {
     try {
       setLoading(true);
       const response = await get(`/api/events/${id}`);
       if (!response.ok) throw new Error("Failed to fetch event details");
       const data = await response.json();
+      console.log("Event data:", data.data);
+      console.log("Event metadata:", data.data.metadata); // More specific debug logging
       setEvent(data.data);
 
       // Fetch error logs
@@ -46,6 +74,11 @@ const EventDetails = () => {
     } catch (err) {
       setStatusMessage({ type: "error", text: err.message });
     }
+  };
+
+  const handleDownloadCSV = () => {
+    // Open the API endpoint in a new tab/window
+    window.open(`/api/events/${id}/inventory/csv`, '_blank');
   };
 
   // Toggle expanded row
@@ -100,7 +133,7 @@ const EventDetails = () => {
   };
 
   const formatDuration = (seconds) => {
-    if (!seconds) return "0 minutes";
+    if (seconds === null || seconds === undefined || isNaN(seconds)) return "0 minutes";
     const minutes = Math.floor(seconds / 60);
     return `${minutes} minutes`;
   };
@@ -132,6 +165,12 @@ const EventDetails = () => {
         </div>
 
         <div className="flex gap-4">
+          <button
+            onClick={handleDownloadCSV}
+            className="flex items-center gap-2 px-4 py-2 rounded-lg bg-green-600 text-white hover:bg-green-700 font-medium"
+          >
+            <span className="font-bold">↓</span> Download Inventory CSV
+          </button>
           <button
             onClick={fetchEventDetails}
             className="flex items-center gap-2 px-4 py-2 rounded-lg bg-blue-100 text-blue-700 hover:bg-blue-200"
@@ -184,42 +223,42 @@ const EventDetails = () => {
             <div>
               <dt className="font-medium">Iteration Number</dt>
               <dd className="text-gray-600">
-                {event.metadata?.iterationNumber || 0}
+                {getStatValue('iterationNumber')}
               </dd>
             </div>
             <div>
               <dt className="font-medium">Last Scrape Duration</dt>
               <dd className="text-gray-600">
-                {formatDuration(event.metadata?.scrapeDurationSeconds)}
+                {formatDuration(getStatValue('scrapeDurationSeconds'))}
               </dd>
             </div>
             <div>
               <dt className="font-medium">Total Running Time</dt>
               <dd className="text-gray-600">
-                {event.metadata?.totalRunningTimeMinutes || "0"} minutes
+                {getStatValue('totalRunningTimeMinutes', '0')} minutes
               </dd>
             </div>
             <div>
               <dt className="font-medium">Total Tickets</dt>
               <dd className="text-gray-600">
-                {event.metadata?.ticketStats?.totalTickets || 0}
+                {getStatValue('ticketStats.totalTickets')}
               </dd>
             </div>
             <div>
               <dt className="font-medium">Ticket Count Change</dt>
               <dd
                 className={getChangeColor(
-                  event.metadata?.ticketStats?.ticketCountChange
+                  getStatValue('ticketStats.ticketCountChange')
                 )}
               >
-                {event.metadata?.ticketStats?.ticketCountChange > 0 ? "+" : ""}
-                {event.metadata?.ticketStats?.ticketCountChange || 0}
+                {getStatValue('ticketStats.ticketCountChange') > 0 ? "+" : ""}
+                {getStatValue('ticketStats.ticketCountChange')}
               </dd>
             </div>
             <div>
               <dt className="font-medium">Previous Ticket Count</dt>
               <dd className="text-gray-600">
-                {event.metadata?.ticketStats?.previousTicketCount || 0}
+                {getStatValue('ticketStats.previousTicketCount')}
               </dd>
             </div>
           </dl>

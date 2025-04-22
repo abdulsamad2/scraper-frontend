@@ -96,7 +96,7 @@ const EventList = ({ onEventSelect }) => {
 
       const eventsData = await eventsResponse.json();
       const statsData = await statsResponse.json();
-
+console.log(statsData)
       setEvents(eventsData.data);
       const runData = eventsData.data
         .filter((item) => item.Skip_Scraping === false)
