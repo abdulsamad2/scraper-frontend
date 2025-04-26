@@ -25,7 +25,9 @@ const NewScraper = ({ onCancel, onSuccess }) => {
     Zone: "General",
     Available_Seats: 0,
     Skip_Scraping: true,
-    inHandDate: "", // Add inHandDate field
+    inHandDate: "",
+    Event_Mapping_ID: "",
+    Percentage_Increase_ListCost: 0,
   });
 
   const [loading, setLoading] = useState(false);
@@ -38,7 +40,9 @@ const NewScraper = ({ onCancel, onSuccess }) => {
     Event_DateTime: true,
     Venue: true,
     Zone: true,
-    inHandDate: true, // Add validation for inHandDate
+    inHandDate: true,
+    Event_Mapping_ID: true,
+    Percentage_Increase_ListCost: true,
   });
   const [touchedFields, setTouchedFields] = useState({
     URL: false,
@@ -48,6 +52,8 @@ const NewScraper = ({ onCancel, onSuccess }) => {
     Venue: false,
     Zone: false,
     inHandDate: false,
+    Event_Mapping_ID: false,
+    Percentage_Increase_ListCost: false,
   });
 
   // Helper function to extract Event ID from URL
@@ -88,7 +94,9 @@ const NewScraper = ({ onCancel, onSuccess }) => {
       Event_DateTime: Boolean(formData.Event_DateTime),
       Venue: formData.Venue.length > 0,
       Zone: formData.Zone.length > 0,
-      inHandDate: Boolean(formData.inHandDate), // Validate inHandDate
+      inHandDate: Boolean(formData.inHandDate),
+      Event_Mapping_ID: formData.Event_Mapping_ID.length > 0,
+      Percentage_Increase_ListCost: formData.Percentage_Increase_ListCost >= 0,
     };
 
     setValidationState(validation);
@@ -101,6 +109,8 @@ const NewScraper = ({ onCancel, onSuccess }) => {
       Venue: true,
       Zone: true,
       inHandDate: true,
+      Event_Mapping_ID: true,
+      Percentage_Increase_ListCost: true,
     });
     return Object.values(validation).every(Boolean);
   };
@@ -180,52 +190,56 @@ const NewScraper = ({ onCancel, onSuccess }) => {
     }));
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
+const handleSubmit = async (e) => {
+  e.preventDefault();
 
-    if (!validateForm()) {
-      setError("Please fill in all required fields correctly");
-      const firstInvalidField = Object.keys(validationState).find(key => !validationState[key]);
-      if (firstInvalidField) {
-        document.getElementById(firstInvalidField)?.focus();
-      }
-      return;
+  if (!validateForm()) {
+    setError("Please fill in all required fields correctly");
+    const firstInvalidField = Object.keys(validationState).find(
+      (key) => !validationState[key]
+    );
+    if (firstInvalidField) {
+      document.getElementById(firstInvalidField)?.focus();
+    }
+    return;
+  }
+
+  setLoading(true);
+  setError("");
+
+  try {
+    const response = await post(`/api/events`, {
+      URL: formData.URL,
+      Event_ID: formData.Event_ID,
+      Event_Name: formData.Event_Name,
+      Event_DateTime: formData.Event_DateTime,
+      Venue: formData.Venue,
+      Zone: formData.Zone,
+      Available_Seats: formData.Available_Seats,
+      Skip_Scraping: formData.Skip_Scraping,
+      inHandDate: formData.inHandDate,
+      eventMappingId: formData.Event_Mapping_ID,
+      priceIncreasePercentage: formData.Percentage_Increase_ListCost,
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.message || "Failed to create event");
     }
 
-    setLoading(true);
-    setError("");
+    const data = await response.json();
+    setSuccess("Event created successfully!");
 
-    try {
-      const response = await post(`/api/events`, {
-        URL: formData.URL,
-        Event_ID: formData.Event_ID,
-        Event_Name: formData.Event_Name,
-        Event_DateTime: formData.Event_DateTime,
-        Venue: formData.Venue,
-        Zone: formData.Zone,
-        Available_Seats: formData.Available_Seats,
-        Skip_Scraping: formData.Skip_Scraping,
-        inHandDate: formData.inHandDate,
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || "Failed to create event");
-      }
-
-      const data = await response.json();
-      setSuccess("Event created successfully!");
-      
-      // Clear form and reset states
-      setTimeout(() => {
-        onSuccess?.(data);
-      }, 1500);
-    } catch (err) {
-      setError(err.message || "An unexpected error occurred");
-    } finally {
-      setLoading(false);
-    }
-  };
+    // Clear form and reset states
+    setTimeout(() => {
+      onSuccess?.(data);
+    }, 1500);
+  } catch (err) {
+    setError(err.message || "An unexpected error occurred");
+  } finally {
+    setLoading(false);
+  }
+}; 
 
   return (
     <div className="space-y-6">
@@ -650,6 +664,107 @@ const NewScraper = ({ onCancel, onSuccess }) => {
               >
                 Initially Paused (Skip Scraping)
               </label>
+            </div>
+
+            {/* Event Mapping ID Field */}
+            <div>
+              <label
+                htmlFor="Event_Mapping_ID"
+                className="block text-sm font-medium text-gray-700 mb-1"
+              >
+                Event Mapping ID <span className="text-red-500">*</span>
+              </label>
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <Hash className="h-5 w-5 text-gray-400" />
+                </div>
+                <input
+                  id="Event_Mapping_ID"
+                  name="Event_Mapping_ID"
+                  type="text"
+                  value={formData.Event_Mapping_ID}
+                  onChange={handleInputChange}
+                  onBlur={handleBlur}
+                  placeholder="Enter event mapping ID"
+                  className={`w-full pl-10 pr-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-colors ${
+                    !validationState.Event_Mapping_ID && touchedFields.Event_Mapping_ID
+                      ? "border-red-500 bg-red-50"
+                      : validationState.Event_Mapping_ID && formData.Event_Mapping_ID
+                      ? "border-green-500 bg-green-50"
+                      : "border-gray-300"
+                  }`}
+                  disabled={loading}
+                />
+                {touchedFields.Event_Mapping_ID && (
+                  validationState.Event_Mapping_ID && formData.Event_Mapping_ID ? (
+                    <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
+                      <CheckCircle className="h-5 w-5 text-green-500" />
+                    </div>
+                  ) : !validationState.Event_Mapping_ID ? (
+                    <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
+                      <AlertCircle className="h-5 w-5 text-red-500" />
+                    </div>
+                  ) : null
+                )}
+              </div>
+              {!validationState.Event_Mapping_ID && touchedFields.Event_Mapping_ID && (
+                <p className="mt-1 text-sm text-red-600 flex items-center gap-1">
+                  <AlertCircle className="h-3 w-3" />
+                  Please enter a valid event mapping ID
+                </p>
+              )}
+            </div>
+
+            {/* Percentage Increase List Cost Field */}
+            <div>
+              <label
+                htmlFor="Percentage_Increase_ListCost"
+                className="block text-sm font-medium text-gray-700 mb-1"
+              >
+                Percentage Increase List Cost <span className="text-red-500">*</span>
+              </label>
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <Tag className="h-5 w-5 text-gray-400" />
+                </div>
+                <input
+                  id="Percentage_Increase_ListCost"
+                  name="Percentage_Increase_ListCost"
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  value={formData.Percentage_Increase_ListCost}
+                  onChange={handleInputChange}
+                  onBlur={handleBlur}
+                  placeholder="Enter percentage increase"
+                  className={`w-full pl-10 pr-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-colors ${
+                    !validationState.Percentage_Increase_ListCost && touchedFields.Percentage_Increase_ListCost
+                      ? "border-red-500 bg-red-50"
+                      : validationState.Percentage_Increase_ListCost && formData.Percentage_Increase_ListCost
+                      ? "border-green-500 bg-green-50"
+                      : "border-gray-300"
+                  }`}
+                  disabled={loading}
+                />
+                {touchedFields.Percentage_Increase_ListCost && (
+                  validationState.Percentage_Increase_ListCost && formData.Percentage_Increase_ListCost ? (
+                    <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
+                      <CheckCircle className="h-5 w-5 text-green-500" />
+                    </div>
+                  ) : !validationState.Percentage_Increase_ListCost ? (
+                    <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
+                      <AlertCircle className="h-5 w-5 text-red-500" />
+                    </div>
+                  ) : null
+                )}
+              </div>
+              {!validationState.Percentage_Increase_ListCost && touchedFields.Percentage_Increase_ListCost && (
+                <p className="mt-1 text-sm text-red-600 flex items-center gap-1">
+                  <AlertCircle className="h-3 w-3" />
+                  Please enter a valid percentage (0 or greater)
+                </p>
+              )}
+              <p className="mt-1 text-xs text-gray-500">Percentage to increase the list cost by</p>
             </div>
           </div>
 

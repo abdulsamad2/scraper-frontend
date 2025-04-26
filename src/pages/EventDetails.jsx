@@ -76,9 +76,23 @@ const EventDetails = () => {
     }
   };
 
-  const handleDownloadCSV = () => {
-    // Open the API endpoint in a new tab/window
-    window.open(`/api/events/${id}/inventory/csv`, '_blank');
+  const handleDownloadCSV = async () => {
+    try {
+      const response = await fetch(`/api/events/${id}/inventory/csv`);
+      if (!response.ok) throw new Error('Failed to download CSV');
+      
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `inventory_${event.Event_Name.replace(/[^a-z0-9]/gi, '_').toLowerCase()}.csv`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+    } catch (error) {
+      setStatusMessage({ type: "error", text: "Failed to download CSV: " + error.message });
+    }
   };
 
   // Toggle expanded row
