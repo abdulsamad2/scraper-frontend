@@ -15,7 +15,8 @@ import {
   Cell,
 } from "recharts";
 import { get, post } from "../services/api";
-import { Calendar, RefreshCcw, Loader, Play, Square, AlertCircle, Clock, TrendingUp, Activity } from "lucide-react";
+import { Calendar, RefreshCcw, Loader, Play, Square, AlertCircle, Clock, TrendingUp, Activity, Cookie } from "lucide-react";
+import CookieRefreshTracker from "../components/CookieRefreshTracker";
 
 const Dashboard = () => {
   const [stats, setStats] = useState(null);
@@ -24,6 +25,7 @@ const Dashboard = () => {
   const [refreshing, setRefreshing] = useState(false);
   const [statusMessage, setStatusMessage] = useState(null);
   const [timeRange, setTimeRange] = useState("24h"); // 24h, 7d, 30d
+  const [cookieRefreshAlert, setCookieRefreshAlert] = useState(null);
 
   // Colors for chart
   const COLORS = ["#0088FE", "#00C49F", "#FFBB28", "#FF8042", "#8884d8"];
@@ -99,11 +101,47 @@ const Dashboard = () => {
     }
   };
 
+  // Fetch cookie refresh alerts
+  const fetchCookieRefreshAlerts = async () => {
+    try {
+      const response = await get("/api/cookies/stats");
+      if (!response.ok) return;
+      
+      const data = await response.json();
+      
+      // If there's a failed refresh in the last hour, show an alert
+      if (data.lastRefreshStatus === "failed" && data.lastRefresh) {
+        const lastRefreshTime = new Date(data.lastRefresh);
+        const now = new Date();
+        const diffMs = now - lastRefreshTime;
+        const diffHours = diffMs / (1000 * 60 * 60);
+        
+        if (diffHours < 1) {
+          setCookieRefreshAlert({
+            time: lastRefreshTime,
+            message: data.lastErrorMessage || "Cookie refresh failed"
+          });
+        } else {
+          setCookieRefreshAlert(null);
+        }
+      } else {
+        setCookieRefreshAlert(null);
+      }
+    } catch (err) {
+      console.error("Error fetching cookie refresh alerts:", err);
+    }
+  };
+
   useEffect(() => {
     fetchStats();
+    fetchCookieRefreshAlerts();
     
     // Set up automatic refresh every 30 seconds
-    const interval = setInterval(() => fetchStats(), 30000);
+    const interval = setInterval(() => {
+      fetchStats();
+      fetchCookieRefreshAlerts();
+    }, 30000);
+    
     return () => clearInterval(interval);
   }, [timeRange]);
 
@@ -180,6 +218,27 @@ const Dashboard = () => {
           <p>{statusMessage.text}</p>
           <button 
             onClick={() => setStatusMessage(null)}
+            className="text-gray-500 hover:text-gray-700"
+          >
+            ×
+          </button>
+        </div>
+      )}
+
+      {/* Cookie refresh alert notification */}
+      {cookieRefreshAlert && (
+        <div className="p-4 bg-red-50 border-l-4 border-red-500 rounded-r-lg shadow-md flex justify-between items-center">
+          <div className="flex items-center gap-3">
+            <Cookie className="w-5 h-5 text-red-600" />
+            <div>
+              <p className="font-medium text-red-700">Cookie refresh failed</p>
+              <p className="text-sm text-red-600">
+                {cookieRefreshAlert.message} at {new Date(cookieRefreshAlert.time).toLocaleTimeString()}
+              </p>
+            </div>
+          </div>
+          <button 
+            onClick={() => setCookieRefreshAlert(null)}
             className="text-gray-500 hover:text-gray-700"
           >
             ×
@@ -374,6 +433,9 @@ const Dashboard = () => {
           </div>
         </div>
       </div>
+
+      {/* Cookie Refresh Tracker Section */}
+      <CookieRefreshTracker />
 
       {/* Charts and Data Section */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
