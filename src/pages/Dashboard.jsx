@@ -473,62 +473,6 @@ const Dashboard = () => {
           )}
         </div>
       </div>
-
-      {/* Recent Events Section */}
-      <div className="bg-white rounded-lg shadow p-6 hover:shadow-md transition-shadow">
-        <div className="flex justify-between items-center mb-4">
-          <h2 className="text-lg font-semibold text-gray-700">
-            Recent Events with Changes
-          </h2>
-          <span className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded-full">
-            {stats?.eventsWithChanges?.length || 0} events
-          </span>
-        </div>
-        {stats?.eventsWithChanges?.length > 0 ? (
-          <div className="space-y-3 max-h-80 overflow-y-auto pr-2 styled-scrollbar">
-            {stats?.eventsWithChanges?.map((event) => (
-              <div key={event._id} className="border-b pb-3 last:border-0 hover:bg-gray-50 p-2 rounded transition-colors">
-                <div className="flex justify-between items-start">
-                  <p className="font-medium text-gray-800">{truncateText(event.title, 25)}</p>
-                  <span className={`text-xs px-2 py-1 rounded-full ${event.ticketChange > 0 ? 'bg-green-100 text-green-800' : event.ticketChange < 0 ? 'bg-red-100 text-red-800' : 'bg-gray-100 text-gray-800'}`}>
-                    {event.ticketChange > 0 ? '+' : ''}{event.ticketChange || '0'} tickets
-                  </span>
-                </div>
-                <div className="flex justify-between items-center mt-1 text-xs">
-                  <span className="text-gray-500 flex items-center">
-                    <Clock className="w-3 h-3 mr-1" />
-                    {new Date(event.lastUpdated).toLocaleString()}
-                  </span>
-                  <span className="font-medium text-blue-600">
-                    {event.availableSeats} seats
-                  </span>
-                </div>
-                {ticketChanges[event._id]?.length > 0 && (
-                  <div className="mt-2 text-xs">
-                    <div className="font-medium text-gray-600 mb-1">Recent Changes:</div>
-                    <div className="space-y-1">
-                      {ticketChanges[event._id].slice(0, 3).map((change, index) => (
-                        <div key={index} className="flex items-center justify-between">
-                          <span className="text-gray-500">
-                            {new Date(change.timestamp).toLocaleTimeString()}
-                          </span>
-                          <span className={`${change.change > 0 ? 'text-green-600' : 'text-red-600'}`}>
-                            {change.change > 0 ? '+' : ''}{change.change} tickets
-                          </span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-              </div>
-            ))}
-          </div>
-        ) : (
-          <div className="py-10 text-center">
-            <p className="text-gray-500">No recent changes detected</p>
-          </div>
-        )}
-      </div>
     </div>
   );
 };
