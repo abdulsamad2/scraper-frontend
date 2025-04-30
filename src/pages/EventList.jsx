@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from "react";
 import { NavLink } from "react-router-dom";
-import { Play, Square, Loader, ChevronLeft, ChevronRight, Calendar, Search, RefreshCcw, Filter } from "lucide-react";
+import { Play, Square, Loader, ChevronLeft, ChevronRight, Calendar, Search, RefreshCcw, Filter, Radio, Wifi, WifiOff } from "lucide-react";
 import { get, post } from "../services/api";
 
 const EventList = ({ onEventSelect }) => {
@@ -9,6 +9,7 @@ const EventList = ({ onEventSelect }) => {
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState(null);
   const [runningEvents, setRunningEvents] = useState(new Set());
+  const [broadcastEvents, setBroadcastEvents] = useState(new Set());
   const [sortConfig, setSortConfig] = useState({
     field: "Last_Updated",
     direction: "desc",
@@ -98,10 +99,18 @@ const EventList = ({ onEventSelect }) => {
       const statsData = await statsResponse.json();
 console.log(statsData)
       setEvents(eventsData.data);
+      // Set active events
       const runData = eventsData.data
         .filter((item) => item.Skip_Scraping === false)
         .map((item) => item.Event_ID);
       setRunningEvents(new Set(runData));
+      
+      // Set broadcasting events
+      const broadcastData = eventsData.data
+        .filter((item) => item.isBroadcasting === true || item.Broadcast === true)
+        .map((item) => item.Event_ID);
+      setBroadcastEvents(new Set(broadcastData));
+      
       setScraperStatus(statsData.data.scraperStatus);
       setError(null);
       
@@ -240,6 +249,86 @@ console.log(statsData)
     );
   };
 
+  // Add a toggle broadcast function
+  const toggleBroadcast = async (eventId) => {
+    try {
+      const isCurrentlyBroadcasting = broadcastEvents.has(eventId);
+      const action = isCurrentlyBroadcasting ? "stop" : "start";
+
+      const response = await post(`/api/events/${eventId}/broadcast/${action}`);
+
+      if (!response.ok)
+        throw new Error(`Failed to ${action} broadcast: ${response.statusText}`);
+
+      setBroadcastEvents((prev) => {
+        const newSet = new Set(prev);
+        isCurrentlyBroadcasting ? newSet.delete(eventId) : newSet.add(eventId);
+        return newSet;
+      });
+
+      // Update the event in the events array
+      setEvents(prev => prev.map(event => {
+        if (event.Event_ID === eventId) {
+          return {
+            ...event,
+            isBroadcasting: !isCurrentlyBroadcasting
+          };
+        }
+        return event;
+      }));
+      
+      setStatusMessage({ 
+        type: "success", 
+        text: `Broadcasting for event ${isCurrentlyBroadcasting ? "stopped" : "started"} successfully` 
+      });
+      setTimeout(() => setStatusMessage(null), 3000);
+    } catch (error) {
+      console.error(`Error toggling broadcast:`, error.message);
+      setStatusMessage({ type: "error", text: error.message });
+      setTimeout(() => setStatusMessage(null), 3000);
+    }
+  };
+
+  const BroadcastButton = ({ event }) => {
+    const isEventBroadcasting = broadcastEvents.has(event);
+    const [isLoading, setIsLoading] = useState(false);
+
+    const handleClick = async () => {
+      setIsLoading(true);
+      await toggleBroadcast(event);
+      setIsLoading(false);
+    };
+
+    return (
+      <button
+        onClick={handleClick}
+        disabled={isLoading}
+        className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm transition-all duration-200 shadow-sm ${
+          isEventBroadcasting
+            ? "bg-purple-100 text-purple-700 hover:bg-purple-200 hover:shadow-md"
+            : "bg-gray-100 text-gray-700 hover:bg-gray-200 hover:shadow-md"
+        }`}
+        title={isEventBroadcasting ? "Stop Broadcasting" : "Start Broadcasting"}
+      >
+        {isLoading ? (
+          <Loader className="w-3 h-3 animate-spin" />
+        ) : isEventBroadcasting ? (
+          <>
+            <Wifi className="w-3 h-3" />
+            <span className="hidden sm:inline">Broadcasting</span>
+            <span className="inline sm:hidden">Broad</span>
+          </>
+        ) : (
+          <>
+            <WifiOff className="w-3 h-3" />
+            <span className="hidden sm:inline">Broadcast</span>
+            <span className="inline sm:hidden">Broad</span>
+          </>
+        )}
+      </button>
+    );
+  };
+
   if (loading) {
     return (
       <div className="flex flex-col items-center justify-center h-64 gap-3">
@@ -298,6 +387,9 @@ console.log(statsData)
           <div className="flex flex-wrap gap-3 items-center mt-2">
             <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
               Active: {runningEvents.size}
+            </span>
+            <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-purple-100 text-purple-800">
+              Broadcasting: {broadcastEvents.size}
             </span>
             <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
               Success: {scraperStatus.successCount}
@@ -415,10 +507,13 @@ console.log(statsData)
                       { label: "Event Name", field: "Event_Name" },
                       { label: "Date", field: "Event_DateTime" },
                       { label: "Seats", field: "Available_Seats" },
+                      { label: "Price Increase", field: "priceIncreasePercentage" },
+                      { label: "Mapping ID", field: "mappingId" },
                       { label: "Last Updated", field: "Last_Updated" },
                       { label: "Venue", field: "Venue" },
                       { label: "Type", field: null },
                       { label: "Status", field: null },
+                      { label: "Broadcast", field: null },
                       { label: "Actions", field: null }
                     ].map((header) => (
                       <th
@@ -452,9 +547,37 @@ console.log(statsData)
                         {new Date(event.Event_DateTime).toLocaleDateString()}
                       </td>
                       <td className="px-3 py-3 whitespace-nowrap text-sm">
-                        <span className="font-medium text-blue-600">
-                          {event.Available_Seats}
+                        <div className="flex items-center gap-2">
+                          <span className="font-medium text-blue-600">
+                            {event.Available_Seats}
+                          </span>
+                          {event.metadata?.ticketStats?.ticketCountChange !== undefined && (
+                            <span className={`text-xs px-1.5 py-0.5 rounded-full ${
+                              event.metadata.ticketStats.ticketCountChange > 0 
+                                ? 'bg-green-100 text-green-800' 
+                                : event.metadata.ticketStats.ticketCountChange < 0 
+                                  ? 'bg-red-100 text-red-800'
+                                  : 'bg-gray-100 text-gray-800'
+                            }`}>
+                              {event.metadata.ticketStats.ticketCountChange > 0 ? '+' : ''}
+                              {event.metadata.ticketStats.ticketCountChange}
+                            </span>
+                          )}
+                        </div>
+                      </td>
+                      <td className="px-3 py-3 whitespace-nowrap text-sm">
+                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                          event.priceIncreasePercentage > 0
+                            ? 'bg-yellow-100 text-yellow-800'
+                            : 'bg-gray-100 text-gray-800'
+                        }`}>
+                          {event.priceIncreasePercentage > 0 ? '+' : ''}{event.priceIncreasePercentage}%
                         </span>
+                      </td>
+                      <td className="px-3 py-3 whitespace-nowrap text-sm">
+                        <div className="font-mono text-xs text-gray-500 tooltip" title={event.mappingId || 'No mapping ID'}>
+                          {event.mappingId ? truncateText(event.mappingId, 8) : '-'}
+                        </div>
                       </td>
                       <td className="px-3 py-3 whitespace-nowrap text-sm text-gray-600">
                         {new Date(event.Last_Updated).toLocaleString()}
@@ -479,10 +602,18 @@ console.log(statsData)
                               ET
                             </span>
                           )}
+                          {event.Skip_Scraping && (
+                            <span className="px-1.5 py-0.5 text-[10px] rounded-full bg-gray-100 text-gray-800 tooltip" title="Scraping Disabled">
+                              SD
+                            </span>
+                          )}
                         </div>
                       </td>
                       <td className="px-3 py-3 whitespace-nowrap">
                         <StatusButton event={event.Event_ID} />
+                      </td>
+                      <td className="px-3 py-3 whitespace-nowrap">
+                        <BroadcastButton event={event.Event_ID} />
                       </td>
                       <td className="px-3 py-3 whitespace-nowrap">
                         <NavLink to={`/events/${event.Event_ID}`}>

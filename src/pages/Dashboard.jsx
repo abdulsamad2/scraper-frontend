@@ -21,14 +21,30 @@ import CookieRefreshTracker from "../components/CookieRefreshTracker";
 const Dashboard = () => {
   const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
   const [refreshing, setRefreshing] = useState(false);
   const [statusMessage, setStatusMessage] = useState(null);
   const [timeRange, setTimeRange] = useState("24h"); // 24h, 7d, 30d
   const [cookieRefreshAlert, setCookieRefreshAlert] = useState(null);
+  const [ticketChanges, setTicketChanges] = useState({});
 
   // Colors for chart
   const COLORS = ["#0088FE", "#00C49F", "#FFBB28", "#FF8042", "#8884d8"];
+
+  const fetchTicketChanges = async (eventId) => {
+    try {
+      const response = await get(`/api/tickets/changes?eventId=${eventId}`);
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      const { data } = await response.json();
+      setTicketChanges(prev => ({
+        ...prev,
+        [eventId]: data
+      }));
+    } catch (err) {
+      console.error("Error fetching ticket changes:", err);
+    }
+  };
 
   const fetchStats = async (showRefreshing = false) => {
     try {
@@ -43,7 +59,13 @@ const Dashboard = () => {
       }
       const { data } = await response.json();
       setStats(data);
-      setError(null);
+      
+      // Fetch ticket changes for each event
+      if (data.eventsWithChanges) {
+        data.eventsWithChanges.forEach(event => {
+          fetchTicketChanges(event._id);
+        });
+      }
       
       if (showRefreshing) {
         setStatusMessage({ type: "success", text: "Dashboard data refreshed successfully" });
@@ -51,8 +73,6 @@ const Dashboard = () => {
       }
     } catch (err) {
       console.error("Error fetching stats:", err);
-      setError(err instanceof Error ? err.message : "Failed to fetch stats");
-      
       if (showRefreshing) {
         setStatusMessage({ type: "error", text: `Error refreshing data: ${err.message}` });
         setTimeout(() => setStatusMessage(null), 3000);
@@ -158,26 +178,6 @@ const Dashboard = () => {
       <div className="flex flex-col items-center justify-center h-64 gap-3">
         <Loader className="w-10 h-10 animate-spin text-blue-600" />
         <p className="text-gray-600">Loading dashboard data...</p>
-      </div>
-    );
-  }
-
-  if (error && !refreshing) {
-    return (
-      <div className="bg-red-50 border-l-4 border-red-500 p-6 rounded-lg">
-        <div className="flex flex-col">
-          <h3 className="text-red-800 font-medium mb-2">Error loading dashboard</h3>
-          <p className="text-sm text-red-700 mb-4">
-            {error}
-          </p>
-          <button 
-            onClick={handleRefresh}
-            className="bg-red-100 text-red-700 px-4 py-2 rounded-lg hover:bg-red-200 self-start flex items-center gap-2"
-          >
-            <RefreshCcw className="w-4 h-4" />
-            Try Again
-          </button>
-        </div>
       </div>
     );
   }
@@ -304,7 +304,7 @@ const Dashboard = () => {
       </div>
 
       {/* Key metrics section */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div className="bg-white rounded-lg shadow p-6 hover:shadow-md transition-shadow">
           <div className="flex items-start justify-between">
             <div>
@@ -332,69 +332,14 @@ const Dashboard = () => {
         <div className="bg-white rounded-lg shadow p-6 hover:shadow-md transition-shadow">
           <div className="flex items-start justify-between">
             <div>
-              <h2 className="text-lg font-semibold text-gray-700">Total Errors</h2>
-              <p className="text-gray-500 text-sm">Errors across all events</p>
-              <p className="text-3xl font-bold mt-2">{stats?.totalErrors || 0}</p>
+              <h2 className="text-lg font-semibold text-gray-700">Scraper Status</h2>
+              <p className="text-gray-500 text-sm">Current scraper activity</p>
+              <p className="text-3xl font-bold mt-2">
+                {stats?.scraperStatus?.isRunning ? "Running" : "Stopped"}
+              </p>
             </div>
-            <div className="p-3 bg-red-100 rounded-full">
-              <AlertCircle className="h-6 w-6 text-red-600" />
-            </div>
-          </div>
-          <div className="mt-4 flex items-center text-xs">
-            <span className={`flex items-center ${stats?.errorRate > stats?.previousErrorRate ? 'text-red-500' : 'text-green-500'}`}>
-              <TrendingUp className="h-3 w-3 mr-1" />
-              {stats?.errorRate > stats?.previousErrorRate ? '+' : '-'}
-              {((stats?.errorRate || 0) * 100).toFixed(1)}% rate
-            </span>
-            <span className="mx-2 text-gray-300">|</span>
-            <span className="text-gray-500">
-              <Clock className="h-3 w-3 mr-1 inline" />
-              Last 24h
-            </span>
-          </div>
-        </div>
-
-        <div className="bg-white rounded-lg shadow p-6 hover:shadow-md transition-shadow">
-          <div className="flex items-start justify-between">
-            <div>
-              <h2 className="text-lg font-semibold text-gray-700">
-                Scraper Status
-              </h2>
-              <p className="text-gray-500 text-sm">Current status and metrics</p>
-              <div className="flex items-center gap-2 mt-2">
-                <span
-                  className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                    stats?.scraperStatus?.isRunning
-                      ? "bg-green-100 text-green-800"
-                      : "bg-red-100 text-red-800"
-                  }`}
-                >
-                  {stats?.scraperStatus?.isRunning ? "Running" : "Stopped"}
-                </span>
-                <button
-                  onClick={toggleScraper}
-                  className={`inline-flex items-center px-2 py-1 rounded text-xs font-medium ${
-                    stats?.scraperStatus?.isRunning
-                      ? "bg-red-100 text-red-700 hover:bg-red-200"
-                      : "bg-green-100 text-green-700 hover:bg-green-200"
-                  }`}
-                >
-                  {stats?.scraperStatus?.isRunning ? (
-                    <>
-                      <Square className="w-3 h-3 mr-1" />
-                      Stop
-                    </>
-                  ) : (
-                    <>
-                      <Play className="w-3 h-3 mr-1" />
-                      Start
-                    </>
-                  )}
-                </button>
-              </div>
-            </div>
-            <div className="p-3 bg-purple-100 rounded-full">
-              <Activity className="h-6 w-6 text-purple-600" />
+            <div className="p-3 bg-green-100 rounded-full">
+              <Activity className="h-6 w-6 text-green-600" />
             </div>
           </div>
           <div className="mt-4 space-y-2">
@@ -529,87 +474,60 @@ const Dashboard = () => {
         </div>
       </div>
 
-      {/* Recent Events and Errors Section */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <div className="bg-white rounded-lg shadow p-6 hover:shadow-md transition-shadow">
-          <div className="flex justify-between items-center mb-4">
-            <h2 className="text-lg font-semibold text-gray-700">
-              Recent Events with Changes
-            </h2>
-            <span className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded-full">
-              {stats?.eventsWithChanges?.length || 0} events
-            </span>
-          </div>
-          {stats?.eventsWithChanges?.length > 0 ? (
-            <div className="space-y-3 max-h-80 overflow-y-auto pr-2 styled-scrollbar">
-              {stats?.eventsWithChanges?.map((event) => (
-                <div key={event._id} className="border-b pb-3 last:border-0 hover:bg-gray-50 p-2 rounded transition-colors">
-                  <div className="flex justify-between items-start">
-                    <p className="font-medium text-gray-800">{truncateText(event.title, 25)}</p>
-                    <span className={`text-xs px-2 py-1 rounded-full ${event.ticketChange > 0 ? 'bg-green-100 text-green-800' : event.ticketChange < 0 ? 'bg-red-100 text-red-800' : 'bg-gray-100 text-gray-800'}`}>
-                      {event.ticketChange > 0 ? '+' : ''}{event.ticketChange || '0'} tickets
-                    </span>
-                  </div>
-                  <div className="flex justify-between items-center mt-1 text-xs">
-                    <span className="text-gray-500 flex items-center">
-                      <Clock className="w-3 h-3 mr-1" />
-                      {new Date(event.lastUpdated).toLocaleString()}
-                    </span>
-                    <span className="font-medium text-blue-600">
-                      {event.availableSeats} seats
-                    </span>
-                  </div>
-                </div>
-              ))}
-            </div>
-          ) : (
-            <div className="py-10 text-center">
-              <p className="text-gray-500">No recent changes detected</p>
-            </div>
-          )}
+      {/* Recent Events Section */}
+      <div className="bg-white rounded-lg shadow p-6 hover:shadow-md transition-shadow">
+        <div className="flex justify-between items-center mb-4">
+          <h2 className="text-lg font-semibold text-gray-700">
+            Recent Events with Changes
+          </h2>
+          <span className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded-full">
+            {stats?.eventsWithChanges?.length || 0} events
+          </span>
         </div>
-
-        <div className="bg-white rounded-lg shadow p-6 hover:shadow-md transition-shadow">
-          <div className="flex justify-between items-center mb-4">
-            <h2 className="text-lg font-semibold text-gray-700">
-              Recent Errors
-            </h2>
-            <span className="text-xs bg-red-100 text-red-800 px-2 py-1 rounded-full">
-              {stats?.recentErrors?.length || 0} errors
-            </span>
-          </div>
-          {stats?.recentErrors?.length > 0 ? (
-            <div className="space-y-3 max-h-80 overflow-y-auto pr-2 styled-scrollbar">
-              {stats?.recentErrors?.map((error) => (
-                <div key={error._id} className="border-b pb-3 last:border-0 hover:bg-red-50 p-2 rounded transition-colors">
-                  <div className="flex items-start gap-2">
-                    <AlertCircle className="w-4 h-4 text-red-500 mt-0.5 flex-shrink-0" />
-                    <div>
-                      <p className="font-medium text-red-700">{truncateText(error.message, 60)}</p>
-                      <div className="flex justify-between items-center mt-1 text-xs">
-                        <span className="text-gray-500">
-                          {new Date(error.createdAt).toLocaleString()}
-                        </span>
-                        <a 
-                          href={error.eventUrl} 
-                          target="_blank" 
-                          rel="noopener noreferrer"
-                          className="text-blue-600 hover:underline"
-                        >
-                          View Event →
-                        </a>
-                      </div>
+        {stats?.eventsWithChanges?.length > 0 ? (
+          <div className="space-y-3 max-h-80 overflow-y-auto pr-2 styled-scrollbar">
+            {stats?.eventsWithChanges?.map((event) => (
+              <div key={event._id} className="border-b pb-3 last:border-0 hover:bg-gray-50 p-2 rounded transition-colors">
+                <div className="flex justify-between items-start">
+                  <p className="font-medium text-gray-800">{truncateText(event.title, 25)}</p>
+                  <span className={`text-xs px-2 py-1 rounded-full ${event.ticketChange > 0 ? 'bg-green-100 text-green-800' : event.ticketChange < 0 ? 'bg-red-100 text-red-800' : 'bg-gray-100 text-gray-800'}`}>
+                    {event.ticketChange > 0 ? '+' : ''}{event.ticketChange || '0'} tickets
+                  </span>
+                </div>
+                <div className="flex justify-between items-center mt-1 text-xs">
+                  <span className="text-gray-500 flex items-center">
+                    <Clock className="w-3 h-3 mr-1" />
+                    {new Date(event.lastUpdated).toLocaleString()}
+                  </span>
+                  <span className="font-medium text-blue-600">
+                    {event.availableSeats} seats
+                  </span>
+                </div>
+                {ticketChanges[event._id]?.length > 0 && (
+                  <div className="mt-2 text-xs">
+                    <div className="font-medium text-gray-600 mb-1">Recent Changes:</div>
+                    <div className="space-y-1">
+                      {ticketChanges[event._id].slice(0, 3).map((change, index) => (
+                        <div key={index} className="flex items-center justify-between">
+                          <span className="text-gray-500">
+                            {new Date(change.timestamp).toLocaleTimeString()}
+                          </span>
+                          <span className={`${change.change > 0 ? 'text-green-600' : 'text-red-600'}`}>
+                            {change.change > 0 ? '+' : ''}{change.change} tickets
+                          </span>
+                        </div>
+                      ))}
                     </div>
                   </div>
-                </div>
-              ))}
-            </div>
-          ) : (
-            <div className="py-10 text-center">
-              <p className="text-gray-500">No recent errors</p>
-            </div>
-          )}
-        </div>
+                )}
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="py-10 text-center">
+            <p className="text-gray-500">No recent changes detected</p>
+          </div>
+        )}
       </div>
     </div>
   );

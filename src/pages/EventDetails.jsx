@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { get, del } from "../services/api";
+import { RefreshCcw } from "lucide-react";
 
 const EventDetails = () => {
   const { id } = useParams();
@@ -11,6 +12,7 @@ const EventDetails = () => {
   const [error, setError] = useState(null);
   const [statusMessage, setStatusMessage] = useState(null);
   const [expandedRow, setExpandedRow] = useState(null); // Track expanded row
+  const [ticketChanges, setTicketChanges] = useState([]);
 
   // Helper function to safely extract stats data
   const getStatValue = (key, defaultValue = 0) => {
@@ -38,6 +40,17 @@ const EventDetails = () => {
     return defaultValue;
   };
 
+  const fetchTicketChanges = async () => {
+    try {
+      const response = await get(`/api/tickets/changes?eventId=${id}`);
+      if (!response.ok) throw new Error("Failed to fetch ticket changes");
+      const { data } = await response.json();
+      setTicketChanges(data);
+    } catch (err) {
+      console.error("Error fetching ticket changes:", err);
+    }
+  };
+
   const fetchEventDetails = async () => {
     try {
       setLoading(true);
@@ -54,6 +67,9 @@ const EventDetails = () => {
         const errorData = await errorResponse.json();
         setErrorLogs(errorData.data);
       }
+
+      // Fetch ticket changes
+      await fetchTicketChanges();
     } catch (err) {
       setError(err.message);
     } finally {
