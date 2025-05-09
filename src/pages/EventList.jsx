@@ -186,7 +186,8 @@ console.log(statsData)
       filtered = filtered.filter(event => 
         event.Event_Name?.toLowerCase().includes(term) ||
         event.Venue?.toLowerCase().includes(term) ||
-        event.Event_ID?.toLowerCase().includes(term)
+        event.Event_ID?.toLowerCase().includes(term) ||
+        event.mapping_id?.toLowerCase().includes(term)
       );
     }
     
@@ -361,17 +362,17 @@ console.log(statsData)
   return (
     <div className="space-y-6">
       {statusMessage && (
-        <div 
+        <div
           className={`p-4 rounded-lg shadow-md flex justify-between items-center ${
-            statusMessage.type === "error" 
-              ? "bg-red-50 text-red-700" 
+            statusMessage.type === "error"
+              ? "bg-red-50 text-red-700"
               : statusMessage.type === "success"
-                ? "bg-green-50 text-green-700"
-                : "bg-blue-50 text-blue-700"
+              ? "bg-green-50 text-green-700"
+              : "bg-blue-50 text-blue-700"
           }`}
         >
           <p>{statusMessage.text}</p>
-          <button 
+          <button
             onClick={() => setStatusMessage(null)}
             className="text-gray-500 hover:text-gray-700"
           >
@@ -379,11 +380,13 @@ console.log(statsData)
           </button>
         </div>
       )}
-      
+
       {/* Header Section - Responsive */}
       <div className="flex flex-col md:flex-row justify-between items-center gap-4 bg-white p-4 rounded-lg shadow">
         <div>
-          <h1 className="text-xl md:text-2xl font-bold text-gray-800">Events Dashboard</h1>
+          <h1 className="text-xl md:text-2xl font-bold text-gray-800">
+            Events Dashboard
+          </h1>
           <div className="flex flex-wrap gap-3 items-center mt-2">
             <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
               Active: {runningEvents.size}
@@ -397,11 +400,13 @@ console.log(statsData)
             <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800">
               Failed: {scraperStatus.failedCount}
             </span>
-            <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium ${
-              scraperStatus.isRunning 
-                ? "bg-green-100 text-green-800" 
-                : "bg-gray-100 text-gray-800"
-            }`}>
+            <span
+              className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium ${
+                scraperStatus.isRunning
+                  ? "bg-green-100 text-green-800"
+                  : "bg-gray-100 text-gray-800"
+              }`}
+            >
               Scraper: {scraperStatus.isRunning ? "Running" : "Stopped"}
             </span>
           </div>
@@ -419,7 +424,7 @@ console.log(statsData)
               className="pl-10 pr-4 py-2 w-full md:w-60 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
             />
           </div>
-          
+
           <div className="relative">
             <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
               <Calendar className="h-4 w-4 text-gray-400" />
@@ -439,21 +444,25 @@ console.log(statsData)
               </button>
             )}
           </div>
-          
+
           <button
             onClick={handleRefresh}
             disabled={refreshing}
             className="px-3 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500"
             title="Refresh data"
           >
-            <RefreshCcw className={`w-5 h-5 text-gray-600 ${refreshing ? 'animate-spin' : ''}`} />
+            <RefreshCcw
+              className={`w-5 h-5 text-gray-600 ${
+                refreshing ? "animate-spin" : ""
+              }`}
+            />
           </button>
-          
+
           <button
             onClick={toggleScraper}
             className={`px-4 py-2 rounded-lg text-sm text-white shadow-sm hover:shadow transition-all ${
-              scraperStatus.isRunning 
-                ? "bg-red-500 hover:bg-red-600" 
+              scraperStatus.isRunning
+                ? "bg-red-500 hover:bg-red-600"
                 : "bg-green-500 hover:bg-green-600"
             }`}
           >
@@ -467,7 +476,7 @@ console.log(statsData)
         {events.length === 0 ? (
           <div className="text-center py-16">
             <p className="text-gray-500 mb-4">No events found</p>
-            <button 
+            <button
               onClick={handleRefresh}
               className="px-4 py-2 bg-blue-100 text-blue-700 rounded-lg hover:bg-blue-200 inline-flex items-center gap-2"
             >
@@ -480,16 +489,16 @@ console.log(statsData)
             <p className="text-gray-500 mb-2">No events match your filters</p>
             <div className="flex flex-wrap justify-center gap-2 mt-4">
               {searchTerm && (
-                <button 
-                  onClick={() => setSearchTerm('')}
+                <button
+                  onClick={() => setSearchTerm("")}
                   className="px-3 py-1.5 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 inline-flex items-center gap-2"
                 >
                   Clear Search
                 </button>
               )}
               {filterDate && (
-                <button 
-                  onClick={() => setFilterDate('')}
+                <button
+                  onClick={() => setFilterDate("")}
                   className="px-3 py-1.5 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 inline-flex items-center gap-2"
                 >
                   Clear Date Filter
@@ -507,29 +516,37 @@ console.log(statsData)
                       { label: "Event Name", field: "Event_Name" },
                       { label: "Date", field: "Event_DateTime" },
                       { label: "Seats", field: "Available_Seats" },
-                      { label: "Price Increase", field: "priceIncreasePercentage" },
-                      { label: "Mapping ID", field: "mappingId" },
+                      {
+                        label: "Price Increase",
+                        field: "priceIncreasePercentage",
+                      },
+                      { label: "Mapping ID", field: "mapping_id" },
                       { label: "Last Updated", field: "Last_Updated" },
                       { label: "Venue", field: "Venue" },
                       { label: "Type", field: null },
                       { label: "Status", field: null },
                       { label: "Broadcast", field: null },
-                      { label: "Actions", field: null }
+                      { label: "Actions", field: null },
                     ].map((header) => (
                       <th
                         key={header.label}
                         className={`px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider ${
-                          header.field ? 'cursor-pointer hover:bg-gray-100' : ''
+                          header.field ? "cursor-pointer hover:bg-gray-100" : ""
                         }`}
-                        onClick={header.field ? () => handleSort(header.field) : undefined}
+                        onClick={
+                          header.field
+                            ? () => handleSort(header.field)
+                            : undefined
+                        }
                       >
                         <div className="flex items-center gap-1">
                           {header.label}
-                          {header.field && sortConfig.field === header.field && (
-                            <span className="text-gray-400">
-                              {sortConfig.direction === 'asc' ? '↑' : '↓'}
-                            </span>
-                          )}
+                          {header.field &&
+                            sortConfig.field === header.field && (
+                              <span className="text-gray-400">
+                                {sortConfig.direction === "asc" ? "↑" : "↓"}
+                              </span>
+                            )}
                         </div>
                       </th>
                     ))}
@@ -537,9 +554,15 @@ console.log(statsData)
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
                   {sortedAndFilteredEvents.map((event) => (
-                    <tr key={event._id} className="hover:bg-gray-50 transition-colors">
+                    <tr
+                      key={event._id}
+                      className="hover:bg-gray-50 transition-colors"
+                    >
                       <td className="px-3 py-3 whitespace-nowrap text-sm">
-                        <div className="font-medium text-gray-900 tooltip" title={event.Event_Name}>
+                        <div
+                          className="font-medium text-gray-900 tooltip"
+                          title={event.Event_Name}
+                        >
                           {truncateText(event.Event_Name, 15)}
                         </div>
                       </td>
@@ -551,59 +574,88 @@ console.log(statsData)
                           <span className="font-medium text-blue-600">
                             {event.Available_Seats}
                           </span>
-                          {event.metadata?.ticketStats?.ticketCountChange !== undefined && (
-                            <span className={`text-xs px-1.5 py-0.5 rounded-full ${
-                              event.metadata.ticketStats.ticketCountChange > 0 
-                                ? 'bg-green-100 text-green-800' 
-                                : event.metadata.ticketStats.ticketCountChange < 0 
-                                  ? 'bg-red-100 text-red-800'
-                                  : 'bg-gray-100 text-gray-800'
-                            }`}>
-                              {event.metadata.ticketStats.ticketCountChange > 0 ? '+' : ''}
+                          {event.metadata?.ticketStats?.ticketCountChange !==
+                            undefined && (
+                            <span
+                              className={`text-xs px-1.5 py-0.5 rounded-full ${
+                                event.metadata.ticketStats.ticketCountChange > 0
+                                  ? "bg-green-100 text-green-800"
+                                  : event.metadata.ticketStats
+                                      .ticketCountChange < 0
+                                  ? "bg-red-100 text-red-800"
+                                  : "bg-gray-100 text-gray-800"
+                              }`}
+                            >
+                              {event.metadata.ticketStats.ticketCountChange > 0
+                                ? "+"
+                                : ""}
                               {event.metadata.ticketStats.ticketCountChange}
                             </span>
                           )}
                         </div>
                       </td>
                       <td className="px-3 py-3 whitespace-nowrap text-sm">
-                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                          event.priceIncreasePercentage > 0
-                            ? 'bg-yellow-100 text-yellow-800'
-                            : 'bg-gray-100 text-gray-800'
-                        }`}>
-                          {event.priceIncreasePercentage > 0 ? '+' : ''}{event.priceIncreasePercentage}%
+                        <span
+                          className={`px-2 py-1 rounded-full text-xs font-medium ${
+                            event.priceIncreasePercentage > 0
+                              ? "bg-yellow-100 text-yellow-800"
+                              : "bg-gray-100 text-gray-800"
+                          }`}
+                        >
+                          {event.priceIncreasePercentage > 0 ? "+" : ""}
+                          {event.priceIncreasePercentage}%
                         </span>
                       </td>
                       <td className="px-3 py-3 whitespace-nowrap text-sm">
-                        <div className="font-mono text-xs text-gray-500 tooltip" title={event.mappingId || 'No mapping ID'}>
-                          {event.mappingId ? truncateText(event.mappingId, 8) : '-'}
+                        <div
+                          className="font-mono text-xs text-gray-500 tooltip"
+                          title={event.mapping_id || "No mapping ID"}
+                        >
+                          {event.mapping_id
+                            ? truncateText(event.mapping_id, 8)
+                            : "-"}
                         </div>
                       </td>
                       <td className="px-3 py-3 whitespace-nowrap text-sm text-gray-600">
                         {new Date(event.Last_Updated).toLocaleString()}
                       </td>
-                      <td className="px-3 py-3 whitespace-nowrap text-sm text-gray-600 tooltip" title={event.Venue}>
+                      <td
+                        className="px-3 py-3 whitespace-nowrap text-sm text-gray-600 tooltip"
+                        title={event.Venue}
+                      >
                         {truncateText(event.Venue, 10)}
                       </td>
                       <td className="px-3 py-3 whitespace-nowrap text-sm">
                         <div className="flex space-x-1">
                           {event.Instant_Download && (
-                            <span className="px-1.5 py-0.5 text-[10px] rounded-full bg-green-100 text-green-800 tooltip" title="Instant Download">
+                            <span
+                              className="px-1.5 py-0.5 text-[10px] rounded-full bg-green-100 text-green-800 tooltip"
+                              title="Instant Download"
+                            >
                               DL
                             </span>
                           )}
                           {event.Instant_Transfer && (
-                            <span className="px-1.5 py-0.5 text-[10px] rounded-full bg-blue-100 text-blue-800 tooltip" title="Instant Transfer">
+                            <span
+                              className="px-1.5 py-0.5 text-[10px] rounded-full bg-blue-100 text-blue-800 tooltip"
+                              title="Instant Transfer"
+                            >
                               TR
                             </span>
                           )}
                           {event.E_Ticket && (
-                            <span className="px-1.5 py-0.5 text-[10px] rounded-full bg-purple-100 text-purple-800 tooltip" title="E-Ticket">
+                            <span
+                              className="px-1.5 py-0.5 text-[10px] rounded-full bg-purple-100 text-purple-800 tooltip"
+                              title="E-Ticket"
+                            >
                               ET
                             </span>
                           )}
                           {event.Skip_Scraping && (
-                            <span className="px-1.5 py-0.5 text-[10px] rounded-full bg-gray-100 text-gray-800 tooltip" title="Scraping Disabled">
+                            <span
+                              className="px-1.5 py-0.5 text-[10px] rounded-full bg-gray-100 text-gray-800 tooltip"
+                              title="Scraping Disabled"
+                            >
                               SD
                             </span>
                           )}
@@ -632,11 +684,22 @@ console.log(statsData)
             {totalPages > 1 && (
               <div className="flex justify-between items-center px-4 py-3 bg-gray-50 border-t border-gray-200">
                 <div className="text-sm text-gray-700">
-                  Showing <span className="font-medium">{(currentPage - 1) * eventsPerPage + 1}</span> to{" "}
+                  Showing{" "}
                   <span className="font-medium">
-                    {Math.min(currentPage * eventsPerPage, filterEvents(sortEvents(events)).length)}
+                    {(currentPage - 1) * eventsPerPage + 1}
                   </span>{" "}
-                  of <span className="font-medium">{filterEvents(sortEvents(events)).length}</span> events
+                  to{" "}
+                  <span className="font-medium">
+                    {Math.min(
+                      currentPage * eventsPerPage,
+                      filterEvents(sortEvents(events)).length
+                    )}
+                  </span>{" "}
+                  of{" "}
+                  <span className="font-medium">
+                    {filterEvents(sortEvents(events)).length}
+                  </span>{" "}
+                  events
                 </div>
                 <div className="flex items-center space-x-2">
                   <button
@@ -646,66 +709,74 @@ console.log(statsData)
                   >
                     <ChevronLeft className="w-5 h-5" />
                   </button>
-                  
+
                   {/* Only show a few pages with ellipsis for better UI */}
                   <div className="flex space-x-1">
-                    {Array.from({ length: Math.min(5, totalPages) }).map((_, i) => {
-                      // Show first page, last page, current page, and pages around current
-                      let pageToShow;
-                      
-                      if (totalPages <= 5) {
-                        // Less than 5 pages, show all
-                        pageToShow = i + 1;
-                      } else if (currentPage <= 3) {
-                        // Near start, show 1-4 plus last
-                        if (i < 4) {
+                    {Array.from({ length: Math.min(5, totalPages) }).map(
+                      (_, i) => {
+                        // Show first page, last page, current page, and pages around current
+                        let pageToShow;
+
+                        if (totalPages <= 5) {
+                          // Less than 5 pages, show all
                           pageToShow = i + 1;
+                        } else if (currentPage <= 3) {
+                          // Near start, show 1-4 plus last
+                          if (i < 4) {
+                            pageToShow = i + 1;
+                          } else {
+                            pageToShow = totalPages;
+                          }
+                        } else if (currentPage >= totalPages - 2) {
+                          // Near end
+                          if (i === 0) {
+                            pageToShow = 1;
+                          } else {
+                            pageToShow = totalPages - (4 - i);
+                          }
                         } else {
-                          pageToShow = totalPages;
+                          // Middle case
+                          if (i === 0) {
+                            pageToShow = 1;
+                          } else if (i === 4) {
+                            pageToShow = totalPages;
+                          } else {
+                            pageToShow = currentPage + (i - 2);
+                          }
                         }
-                      } else if (currentPage >= totalPages - 2) {
-                        // Near end
-                        if (i === 0) {
-                          pageToShow = 1;
-                        } else {
-                          pageToShow = totalPages - (4 - i);
+
+                        // Add ellipsis
+                        if (
+                          (i === 1 && pageToShow !== 2) ||
+                          (i === 3 && pageToShow !== totalPages - 1)
+                        ) {
+                          return (
+                            <span
+                              key={`ellipsis-${i}`}
+                              className="px-3 py-1 text-gray-500"
+                            >
+                              ...
+                            </span>
+                          );
                         }
-                      } else {
-                        // Middle case
-                        if (i === 0) {
-                          pageToShow = 1;
-                        } else if (i === 4) {
-                          pageToShow = totalPages;
-                        } else {
-                          pageToShow = currentPage + (i - 2);
-                        }
-                      }
-                      
-                      // Add ellipsis
-                      if ((i === 1 && pageToShow !== 2) || (i === 3 && pageToShow !== totalPages - 1)) {
+
                         return (
-                          <span key={`ellipsis-${i}`} className="px-3 py-1 text-gray-500">
-                            ...
-                          </span>
+                          <button
+                            key={pageToShow}
+                            onClick={() => paginate(pageToShow)}
+                            className={`px-3 py-1 rounded ${
+                              currentPage === pageToShow
+                                ? "bg-blue-600 text-white"
+                                : "text-gray-600 hover:bg-gray-200"
+                            }`}
+                          >
+                            {pageToShow}
+                          </button>
                         );
                       }
-                      
-                      return (
-                        <button
-                          key={pageToShow}
-                          onClick={() => paginate(pageToShow)}
-                          className={`px-3 py-1 rounded ${
-                            currentPage === pageToShow
-                              ? "bg-blue-600 text-white"
-                              : "text-gray-600 hover:bg-gray-200"
-                          }`}
-                        >
-                          {pageToShow}
-                        </button>
-                      );
-                    })}
+                    )}
                   </div>
-                  
+
                   <button
                     onClick={() => paginate(currentPage + 1)}
                     disabled={currentPage === totalPages}

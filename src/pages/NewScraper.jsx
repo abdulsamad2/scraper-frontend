@@ -12,7 +12,7 @@ import {
   ArrowLeft,
   AlertCircle,
   CheckCircle,
-  Loader
+  Loader,
 } from "lucide-react";
 
 const NewScraper = ({ onCancel, onSuccess }) => {
@@ -26,7 +26,7 @@ const NewScraper = ({ onCancel, onSuccess }) => {
     Available_Seats: 0,
     Skip_Scraping: true,
     inHandDate: "",
-    Event_Mapping_ID: "",
+    mapping_id: "",
     Percentage_Increase_ListCost: 0,
   });
 
@@ -41,7 +41,7 @@ const NewScraper = ({ onCancel, onSuccess }) => {
     Venue: true,
     Zone: true,
     inHandDate: true,
-    Event_Mapping_ID: true,
+    mapping_id: true,
     Percentage_Increase_ListCost: true,
   });
   const [touchedFields, setTouchedFields] = useState({
@@ -52,7 +52,7 @@ const NewScraper = ({ onCancel, onSuccess }) => {
     Venue: false,
     Zone: false,
     inHandDate: false,
-    Event_Mapping_ID: false,
+    mapping_id: false,
     Percentage_Increase_ListCost: false,
   });
 
@@ -60,10 +60,14 @@ const NewScraper = ({ onCancel, onSuccess }) => {
   const extractEventIdFromUrl = (url) => {
     try {
       const parsed = new URL(url);
-      if (parsed.hostname.includes("ticketmaster.com") && parsed.pathname.includes("/event/")) {
+      if (
+        parsed.hostname.includes("ticketmaster.com") &&
+        parsed.pathname.includes("/event/")
+      ) {
         // Try to extract event ID from pathname
         const pathParts = parsed.pathname.split("/");
-        const eventIdIndex = pathParts.findIndex(part => part === "event") + 1;
+        const eventIdIndex =
+          pathParts.findIndex((part) => part === "event") + 1;
         if (eventIdIndex < pathParts.length) {
           return pathParts[eventIdIndex];
         }
@@ -95,7 +99,7 @@ const NewScraper = ({ onCancel, onSuccess }) => {
       Venue: formData.Venue.length > 0,
       Zone: formData.Zone.length > 0,
       inHandDate: Boolean(formData.inHandDate),
-      Event_Mapping_ID: formData.Event_Mapping_ID.length > 0,
+      mapping_id: formData.mapping_id.length > 0,
       Percentage_Increase_ListCost: formData.Percentage_Increase_ListCost >= 0,
     };
 
@@ -109,7 +113,7 @@ const NewScraper = ({ onCancel, onSuccess }) => {
       Venue: true,
       Zone: true,
       inHandDate: true,
-      Event_Mapping_ID: true,
+      mapping_id: true,
       Percentage_Increase_ListCost: true,
     });
     return Object.values(validation).every(Boolean);
@@ -117,7 +121,7 @@ const NewScraper = ({ onCancel, onSuccess }) => {
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
-    
+
     // Special handling for URL changes - try to extract event ID
     if (name === "URL" && validateUrl(value) && !formData.Event_ID) {
       const extractedId = extractEventIdFromUrl(value);
@@ -141,11 +145,11 @@ const NewScraper = ({ onCancel, onSuccess }) => {
     }
 
     setError("");
-    setTouchedFields(prev => ({
+    setTouchedFields((prev) => ({
       ...prev,
-      [name]: true
+      [name]: true,
     }));
-    
+
     // Live validation for the changed field
     let isValid = true;
     switch (name) {
@@ -167,18 +171,18 @@ const NewScraper = ({ onCancel, onSuccess }) => {
       default:
         break;
     }
-    
-    setValidationState(prev => ({
+
+    setValidationState((prev) => ({
       ...prev,
-      [name]: isValid
+      [name]: isValid,
     }));
   };
 
   const handleBlur = (e) => {
     const { name } = e.target;
-    setTouchedFields(prev => ({
+    setTouchedFields((prev) => ({
       ...prev,
-      [name]: true
+      [name]: true,
     }));
   };
 
@@ -190,56 +194,56 @@ const NewScraper = ({ onCancel, onSuccess }) => {
     }));
   };
 
-const handleSubmit = async (e) => {
-  e.preventDefault();
+  const handleSubmit = async (e) => {
+    e.preventDefault();
 
-  if (!validateForm()) {
-    setError("Please fill in all required fields correctly");
-    const firstInvalidField = Object.keys(validationState).find(
-      (key) => !validationState[key]
-    );
-    if (firstInvalidField) {
-      document.getElementById(firstInvalidField)?.focus();
-    }
-    return;
-  }
-
-  setLoading(true);
-  setError("");
-
-  try {
-    const response = await post(`/api/events`, {
-      URL: formData.URL,
-      Event_ID: formData.Event_ID,
-      Event_Name: formData.Event_Name,
-      Event_DateTime: formData.Event_DateTime,
-      Venue: formData.Venue,
-      Zone: formData.Zone,
-      Available_Seats: formData.Available_Seats,
-      Skip_Scraping: formData.Skip_Scraping,
-      inHandDate: formData.inHandDate,
-      eventMappingId: formData.Event_Mapping_ID,
-      priceIncreasePercentage: formData.Percentage_Increase_ListCost,
-    });
-
-    if (!response.ok) {
-      const errorData = await response.json();
-      throw new Error(errorData.message || "Failed to create event");
+    if (!validateForm()) {
+      setError("Please fill in all required fields correctly");
+      const firstInvalidField = Object.keys(validationState).find(
+        (key) => !validationState[key]
+      );
+      if (firstInvalidField) {
+        document.getElementById(firstInvalidField)?.focus();
+      }
+      return;
     }
 
-    const data = await response.json();
-    setSuccess("Event created successfully!");
+    setLoading(true);
+    setError("");
 
-    // Clear form and reset states
-    setTimeout(() => {
-      onSuccess?.(data);
-    }, 1500);
-  } catch (err) {
-    setError(err.message || "An unexpected error occurred");
-  } finally {
-    setLoading(false);
-  }
-}; 
+    try {
+      const response = await post(`/api/events`, {
+        URL: formData.URL,
+        Event_ID: formData.Event_ID,
+        Event_Name: formData.Event_Name,
+        Event_DateTime: formData.Event_DateTime,
+        Venue: formData.Venue,
+        Zone: formData.Zone,
+        Available_Seats: formData.Available_Seats,
+        Skip_Scraping: formData.Skip_Scraping,
+        inHandDate: formData.inHandDate,
+        mapping_id: formData.mapping_id,
+        priceIncreasePercentage: formData.Percentage_Increase_ListCost,
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || "Failed to create event");
+      }
+
+      const data = await response.json();
+      setSuccess("Event created successfully!");
+
+      // Clear form and reset states
+      setTimeout(() => {
+        onSuccess?.(data);
+      }, 1500);
+    } catch (err) {
+      setError(err.message || "An unexpected error occurred");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <div className="space-y-6">
@@ -255,8 +259,12 @@ const handleSubmit = async (e) => {
             <ArrowLeft className="w-5 h-5" />
           </button>
           <div>
-            <h1 className="text-xl md:text-2xl font-bold text-gray-800">Add New Event</h1>
-            <p className="text-sm text-gray-500">Create a new event to track ticket availability</p>
+            <h1 className="text-xl md:text-2xl font-bold text-gray-800">
+              Add New Event
+            </h1>
+            <p className="text-sm text-gray-500">
+              Create a new event to track ticket availability
+            </p>
           </div>
         </div>
       </div>
@@ -270,7 +278,7 @@ const handleSubmit = async (e) => {
             <p className="text-sm text-red-700">{error}</p>
           </div>
         )}
-        
+
         {success && (
           <div className="mb-6 bg-green-50 border-l-4 border-green-500 p-4 rounded-r-lg flex items-start gap-3">
             <CheckCircle className="w-5 h-5 text-green-500 mt-0.5 flex-shrink-0" />
@@ -310,8 +318,8 @@ const handleSubmit = async (e) => {
                   }`}
                   disabled={loading}
                 />
-                {touchedFields.URL && (
-                  validationState.URL && formData.URL ? (
+                {touchedFields.URL &&
+                  (validationState.URL && formData.URL ? (
                     <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
                       <CheckCircle className="h-5 w-5 text-green-500" />
                     </div>
@@ -319,8 +327,7 @@ const handleSubmit = async (e) => {
                     <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
                       <AlertCircle className="h-5 w-5 text-red-500" />
                     </div>
-                  ) : null
-                )}
+                  ) : null)}
               </div>
               {!validationState.URL && touchedFields.URL && (
                 <p className="mt-1 text-sm text-red-600 flex items-center gap-1">
@@ -359,8 +366,8 @@ const handleSubmit = async (e) => {
                   }`}
                   disabled={loading}
                 />
-                {touchedFields.Event_ID && (
-                  validationState.Event_ID && formData.Event_ID ? (
+                {touchedFields.Event_ID &&
+                  (validationState.Event_ID && formData.Event_ID ? (
                     <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
                       <CheckCircle className="h-5 w-5 text-green-500" />
                     </div>
@@ -368,8 +375,7 @@ const handleSubmit = async (e) => {
                     <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
                       <AlertCircle className="h-5 w-5 text-red-500" />
                     </div>
-                  ) : null
-                )}
+                  ) : null)}
               </div>
               {!validationState.Event_ID && touchedFields.Event_ID && (
                 <p className="mt-1 text-sm text-red-600 flex items-center gap-1">
@@ -377,7 +383,9 @@ const handleSubmit = async (e) => {
                   Please enter a valid event ID
                 </p>
               )}
-              <p className="mt-1 text-xs text-gray-500">This ID will be extracted automatically if present in the URL</p>
+              <p className="mt-1 text-xs text-gray-500">
+                This ID will be extracted automatically if present in the URL
+              </p>
             </div>
 
             {/* Event Name Field */}
@@ -409,8 +417,8 @@ const handleSubmit = async (e) => {
                   }`}
                   disabled={loading}
                 />
-                {touchedFields.Event_Name && (
-                  validationState.Event_Name && formData.Event_Name ? (
+                {touchedFields.Event_Name &&
+                  (validationState.Event_Name && formData.Event_Name ? (
                     <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
                       <CheckCircle className="h-5 w-5 text-green-500" />
                     </div>
@@ -418,8 +426,7 @@ const handleSubmit = async (e) => {
                     <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
                       <AlertCircle className="h-5 w-5 text-red-500" />
                     </div>
-                  ) : null
-                )}
+                  ) : null)}
               </div>
               {!validationState.Event_Name && touchedFields.Event_Name && (
                 <p className="mt-1 text-sm text-red-600 flex items-center gap-1">
@@ -449,16 +456,18 @@ const handleSubmit = async (e) => {
                   onChange={handleInputChange}
                   onBlur={handleBlur}
                   className={`w-full pl-10 pr-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-colors ${
-                    !validationState.Event_DateTime && touchedFields.Event_DateTime
+                    !validationState.Event_DateTime &&
+                    touchedFields.Event_DateTime
                       ? "border-red-500 bg-red-50"
-                      : validationState.Event_DateTime && formData.Event_DateTime
+                      : validationState.Event_DateTime &&
+                        formData.Event_DateTime
                       ? "border-green-500 bg-green-50"
                       : "border-gray-300"
                   }`}
                   disabled={loading}
                 />
-                {touchedFields.Event_DateTime && (
-                  validationState.Event_DateTime && formData.Event_DateTime ? (
+                {touchedFields.Event_DateTime &&
+                  (validationState.Event_DateTime && formData.Event_DateTime ? (
                     <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
                       <CheckCircle className="h-5 w-5 text-green-500" />
                     </div>
@@ -466,15 +475,15 @@ const handleSubmit = async (e) => {
                     <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
                       <AlertCircle className="h-5 w-5 text-red-500" />
                     </div>
-                  ) : null
-                )}
+                  ) : null)}
               </div>
-              {!validationState.Event_DateTime && touchedFields.Event_DateTime && (
-                <p className="mt-1 text-sm text-red-600 flex items-center gap-1">
-                  <AlertCircle className="h-3 w-3" />
-                  Please select an event date and time
-                </p>
-              )}
+              {!validationState.Event_DateTime &&
+                touchedFields.Event_DateTime && (
+                  <p className="mt-1 text-sm text-red-600 flex items-center gap-1">
+                    <AlertCircle className="h-3 w-3" />
+                    Please select an event date and time
+                  </p>
+                )}
             </div>
 
             {/* In-Hand Date Field */}
@@ -505,8 +514,8 @@ const handleSubmit = async (e) => {
                   }`}
                   disabled={loading}
                 />
-                {touchedFields.inHandDate && (
-                  validationState.inHandDate && formData.inHandDate ? (
+                {touchedFields.inHandDate &&
+                  (validationState.inHandDate && formData.inHandDate ? (
                     <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
                       <CheckCircle className="h-5 w-5 text-green-500" />
                     </div>
@@ -514,8 +523,7 @@ const handleSubmit = async (e) => {
                     <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
                       <AlertCircle className="h-5 w-5 text-red-500" />
                     </div>
-                  ) : null
-                )}
+                  ) : null)}
               </div>
               {!validationState.inHandDate && touchedFields.inHandDate && (
                 <p className="mt-1 text-sm text-red-600 flex items-center gap-1">
@@ -523,7 +531,9 @@ const handleSubmit = async (e) => {
                   Please select an in-hand date
                 </p>
               )}
-              <p className="mt-1 text-xs text-gray-500">When tickets will be available/in hand</p>
+              <p className="mt-1 text-xs text-gray-500">
+                When tickets will be available/in hand
+              </p>
             </div>
 
             {/* Venue Field */}
@@ -555,8 +565,8 @@ const handleSubmit = async (e) => {
                   }`}
                   disabled={loading}
                 />
-                {touchedFields.Venue && (
-                  validationState.Venue && formData.Venue ? (
+                {touchedFields.Venue &&
+                  (validationState.Venue && formData.Venue ? (
                     <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
                       <CheckCircle className="h-5 w-5 text-green-500" />
                     </div>
@@ -564,8 +574,7 @@ const handleSubmit = async (e) => {
                     <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
                       <AlertCircle className="h-5 w-5 text-red-500" />
                     </div>
-                  ) : null
-                )}
+                  ) : null)}
               </div>
               {!validationState.Venue && touchedFields.Venue && (
                 <p className="mt-1 text-sm text-red-600 flex items-center gap-1">
@@ -604,8 +613,8 @@ const handleSubmit = async (e) => {
                   }`}
                   disabled={loading}
                 />
-                {touchedFields.Zone && (
-                  validationState.Zone && formData.Zone ? (
+                {touchedFields.Zone &&
+                  (validationState.Zone && formData.Zone ? (
                     <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
                       <CheckCircle className="h-5 w-5 text-green-500" />
                     </div>
@@ -613,8 +622,7 @@ const handleSubmit = async (e) => {
                     <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
                       <AlertCircle className="h-5 w-5 text-red-500" />
                     </div>
-                  ) : null
-                )}
+                  ) : null)}
               </div>
               {!validationState.Zone && touchedFields.Zone && (
                 <p className="mt-1 text-sm text-red-600 flex items-center gap-1">
@@ -644,7 +652,9 @@ const handleSubmit = async (e) => {
                   disabled={loading}
                 />
               </div>
-              <p className="mt-1 text-xs text-gray-500">Initial number of available seats (if known)</p>
+              <p className="mt-1 text-xs text-gray-500">
+                Initial number of available seats (if known)
+              </p>
             </div>
 
             {/* Skip Scraping Field */}
@@ -669,7 +679,7 @@ const handleSubmit = async (e) => {
             {/* Event Mapping ID Field */}
             <div>
               <label
-                htmlFor="Event_Mapping_ID"
+                htmlFor="mapping_id"
                 className="block text-sm font-medium text-gray-700 mb-1"
               >
                 Event Mapping ID <span className="text-red-500">*</span>
@@ -679,35 +689,34 @@ const handleSubmit = async (e) => {
                   <Hash className="h-5 w-5 text-gray-400" />
                 </div>
                 <input
-                  id="Event_Mapping_ID"
-                  name="Event_Mapping_ID"
+                  id="mapping_id"
+                  name="mapping_id"
                   type="text"
-                  value={formData.Event_Mapping_ID}
+                  value={formData.mapping_id}
                   onChange={handleInputChange}
                   onBlur={handleBlur}
                   placeholder="Enter event mapping ID"
                   className={`w-full pl-10 pr-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-colors ${
-                    !validationState.Event_Mapping_ID && touchedFields.Event_Mapping_ID
+                    !validationState.mapping_id && touchedFields.mapping_id
                       ? "border-red-500 bg-red-50"
-                      : validationState.Event_Mapping_ID && formData.Event_Mapping_ID
+                      : validationState.mapping_id && formData.mapping_id
                       ? "border-green-500 bg-green-50"
                       : "border-gray-300"
                   }`}
                   disabled={loading}
                 />
-                {touchedFields.Event_Mapping_ID && (
-                  validationState.Event_Mapping_ID && formData.Event_Mapping_ID ? (
+                {touchedFields.mapping_id &&
+                  (validationState.mapping_id && formData.mapping_id ? (
                     <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
                       <CheckCircle className="h-5 w-5 text-green-500" />
                     </div>
-                  ) : !validationState.Event_Mapping_ID ? (
+                  ) : !validationState.mapping_id ? (
                     <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
                       <AlertCircle className="h-5 w-5 text-red-500" />
                     </div>
-                  ) : null
-                )}
+                  ) : null)}
               </div>
-              {!validationState.Event_Mapping_ID && touchedFields.Event_Mapping_ID && (
+              {!validationState.mapping_id && touchedFields.mapping_id && (
                 <p className="mt-1 text-sm text-red-600 flex items-center gap-1">
                   <AlertCircle className="h-3 w-3" />
                   Please enter a valid event mapping ID
@@ -721,7 +730,8 @@ const handleSubmit = async (e) => {
                 htmlFor="Percentage_Increase_ListCost"
                 className="block text-sm font-medium text-gray-700 mb-1"
               >
-                Percentage Increase List Cost <span className="text-red-500">*</span>
+                Percentage Increase List Cost{" "}
+                <span className="text-red-500">*</span>
               </label>
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -738,16 +748,19 @@ const handleSubmit = async (e) => {
                   onBlur={handleBlur}
                   placeholder="Enter percentage increase"
                   className={`w-full pl-10 pr-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-colors ${
-                    !validationState.Percentage_Increase_ListCost && touchedFields.Percentage_Increase_ListCost
+                    !validationState.Percentage_Increase_ListCost &&
+                    touchedFields.Percentage_Increase_ListCost
                       ? "border-red-500 bg-red-50"
-                      : validationState.Percentage_Increase_ListCost && formData.Percentage_Increase_ListCost
+                      : validationState.Percentage_Increase_ListCost &&
+                        formData.Percentage_Increase_ListCost
                       ? "border-green-500 bg-green-50"
                       : "border-gray-300"
                   }`}
                   disabled={loading}
                 />
-                {touchedFields.Percentage_Increase_ListCost && (
-                  validationState.Percentage_Increase_ListCost && formData.Percentage_Increase_ListCost ? (
+                {touchedFields.Percentage_Increase_ListCost &&
+                  (validationState.Percentage_Increase_ListCost &&
+                  formData.Percentage_Increase_ListCost ? (
                     <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
                       <CheckCircle className="h-5 w-5 text-green-500" />
                     </div>
@@ -755,16 +768,18 @@ const handleSubmit = async (e) => {
                     <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
                       <AlertCircle className="h-5 w-5 text-red-500" />
                     </div>
-                  ) : null
-                )}
+                  ) : null)}
               </div>
-              {!validationState.Percentage_Increase_ListCost && touchedFields.Percentage_Increase_ListCost && (
-                <p className="mt-1 text-sm text-red-600 flex items-center gap-1">
-                  <AlertCircle className="h-3 w-3" />
-                  Please enter a valid percentage (0 or greater)
-                </p>
-              )}
-              <p className="mt-1 text-xs text-gray-500">Percentage to increase the list cost by</p>
+              {!validationState.Percentage_Increase_ListCost &&
+                touchedFields.Percentage_Increase_ListCost && (
+                  <p className="mt-1 text-sm text-red-600 flex items-center gap-1">
+                    <AlertCircle className="h-3 w-3" />
+                    Please enter a valid percentage (0 or greater)
+                  </p>
+                )}
+              <p className="mt-1 text-xs text-gray-500">
+                Percentage to increase the list cost by
+              </p>
             </div>
           </div>
 

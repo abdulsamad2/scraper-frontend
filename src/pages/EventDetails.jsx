@@ -241,6 +241,10 @@ const EventDetails = () => {
               </dd>
             </div>
             <div>
+              <dt className="font-medium">Mapping ID</dt>
+              <dd className="text-gray-600 font-mono">{event.mapping_id || "Not set"}</dd>
+            </div>
+            <div>
               <dt className="font-medium">URL</dt>
               <dd className="text-gray-600 break-all">{event.URL}</dd>
             </div>
