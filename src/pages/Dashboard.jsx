@@ -15,7 +15,7 @@ import {
   Cell,
 } from "recharts";
 import { get, post } from "../services/api";
-import { Calendar, RefreshCcw, Loader, Play, Square, AlertCircle, Clock, TrendingUp, Activity, Cookie } from "lucide-react";
+import { Calendar, RefreshCcw, Loader, Play, Square, AlertCircle, Clock, TrendingUp, Activity, Cookie, Trash2 } from "lucide-react";
 import CookieRefreshTracker from "../components/CookieRefreshTracker";
 
 const Dashboard = () => {
@@ -118,6 +118,33 @@ const Dashboard = () => {
       console.error("Error:", error);
       setStatusMessage({ type: "error", text: error.message });
       setTimeout(() => setStatusMessage(null), 3000);
+    }
+  };
+
+  // Clear inventory function
+  const clearInventory = async () => {
+    try {
+      setStatusMessage({ type: "info", text: "Clearing inventory..." });
+      
+      const res = await post("/api/inventory/clear-sync");
+      
+      if (!res.ok) throw new Error("Failed to clear inventory");
+      
+      const responseData = await res.json();
+      
+      setStatusMessage({
+        type: "success",
+        text: responseData.message || "Inventory cleared successfully"
+      });
+      
+      // Refresh the dashboard data after clearing inventory
+      setTimeout(() => fetchStats(), 1000);
+    } catch (error) {
+      console.error("Error clearing inventory:", error);
+      setStatusMessage({ type: "error", text: error.message });
+    } finally {
+      // Keep status message visible for 5 seconds
+      setTimeout(() => setStatusMessage(null), 5000);
     }
   };
 
@@ -375,6 +402,16 @@ const Dashboard = () => {
                 </div>
               </div>
             </div>
+          </div>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={clearInventory}
+              className="px-4 py-2 bg-red-50 text-red-700 rounded-md hover:bg-red-100 transition-colors flex items-center gap-1.5 mt-3 text-sm font-medium border border-red-200"
+              title="Clear all inventory from sync service"
+            >
+              <Trash2 className="h-4 w-4" />
+              Clear Inventory
+            </button>
           </div>
         </div>
       </div>
