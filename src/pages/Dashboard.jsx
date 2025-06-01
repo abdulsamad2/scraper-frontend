@@ -15,7 +15,7 @@ import {
   Cell,
 } from "recharts";
 import { get, post } from "../services/api";
-import { Calendar, RefreshCcw, Loader, Play, Square, AlertCircle, Clock, TrendingUp, Activity, Cookie, Trash2 } from "lucide-react";
+import { Calendar, RefreshCcw, Loader, Play, Square, AlertCircle, Clock, TrendingUp, Activity, Cookie, Trash2, Power } from "lucide-react";
 import CookieRefreshTracker from "../components/CookieRefreshTracker";
 
 const Dashboard = () => {
@@ -157,6 +157,40 @@ const Dashboard = () => {
       setStatusMessage({ type: "error", text: error.message });
     } finally {
       // Keep status message visible for 5 seconds
+      setTimeout(() => setStatusMessage(null), 5000);
+    }
+  };
+
+  // Restart application server function
+  const restartAppServer = async () => {
+    try {
+      // Optional: Add a confirmation dialog before restarting
+      if (!window.confirm("Are you sure you want to restart the application server?")) {
+        return;
+      }
+
+      setStatusMessage({ type: "info", text: "Sending restart request to server..." });
+
+      // Use the 'post' helper from api.js
+      // The 'post' helper handles the base URL, method, and Content-Type header.
+      // If your /api/admin/restart endpoint doesn't expect a body, pass null or {}
+      const response = await post('/api/admin/restart', {}); // Or null if no body is expected
+
+      const result = await response.json();
+
+      if (response.ok) {
+        setStatusMessage({ type: "success", text: result.message || 'Restart request sent successfully. The server is restarting.' });
+        // Optionally, you could disable the button for a while or prompt the user
+        // that the application might be temporarily unavailable.
+      } else {
+        throw new Error(result.message || `Server responded with ${response.status}`);
+      }
+      // Clear message after a few seconds, but the user should expect disruption.
+      setTimeout(() => setStatusMessage(null), 5000);
+
+    } catch (error) {
+      console.error('Error restarting server:', error);
+      setStatusMessage({ type: "error", text: `Failed to send restart request: ${error.message}` });
       setTimeout(() => setStatusMessage(null), 5000);
     }
   };
@@ -424,6 +458,16 @@ const Dashboard = () => {
             >
               <Trash2 className="h-4 w-4" />
               Clear Inventory
+            </button>
+            {/* New Restart Server Button */}
+            <button
+              onClick={restartAppServer}
+              className="bg-red-600 hover:bg-red-700 text-white font-semibold py-2 px-4 rounded-md flex items-center transition-colors duration-150 shadow-sm disabled:opacity-60 ml-3 mt-3 text-sm"
+              disabled={refreshing} // Disable if refreshing or scraper is running
+              title="Restart the application server. This may cause a brief interruption."
+            >
+              <Power size={16} className="mr-1.5" />
+              Restart Server
             </button>
           </div>
         </div>
