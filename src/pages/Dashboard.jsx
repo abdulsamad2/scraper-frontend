@@ -34,15 +34,13 @@ const Dashboard = () => {
     try {
       const response = await get(`/api/tickets/changes?eventId=${eventId}`);
       if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
+        throw new Error(`HTTP error! status: ${response.status} for event ${eventId}`);
       }
       const { data } = await response.json();
-      setTicketChanges(prev => ({
-        ...prev,
-        [eventId]: data
-      }));
+      return { eventId, data }; // Return eventId and data
     } catch (err) {
-      console.error("Error fetching ticket changes:", err);
+      console.error(`Error fetching ticket changes for event ${eventId}:`, err);
+      return { eventId, data: null, error: err }; // Return error for individual fetch
     }
   };
 
@@ -57,14 +55,29 @@ const Dashboard = () => {
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
-      const { data } = await response.json();
-      setStats(data);
+      const { data: statsData } = await response.json(); // Renamed to avoid conflict
+      setStats(statsData);
       
-      // Fetch ticket changes for each event
-      if (data.eventsWithChanges) {
-        data.eventsWithChanges.forEach(event => {
-          fetchTicketChanges(event._id);
+      // Fetch ticket changes for each event in parallel
+      if (statsData.eventsWithChanges && statsData.eventsWithChanges.length > 0) {
+        const ticketChangePromises = statsData.eventsWithChanges.map(event =>
+          fetchTicketChanges(event._id)
+        );
+        
+        const results = await Promise.all(ticketChangePromises);
+        
+        // Process results and update ticketChanges state
+        const newTicketChanges = {};
+        results.forEach(result => {
+          if (result && result.data) { // Check if data is not null
+            newTicketChanges[result.eventId] = result.data;
+          } else if (result && result.error) {
+            // Optionally handle individual fetch errors here, e.g., log them
+            // or set a specific state for failed event data
+            console.warn(`Failed to fetch changes for event ${result.eventId}`);
+          }
         });
+        setTicketChanges(prev => ({ ...prev, ...newTicketChanges }));
       }
       
       if (showRefreshing) {
